@@ -1,0 +1,39 @@
+#
+# herdr-plugin.toml registers herdr-tailscale with herdr as a first-class
+# plugin. Install it with `herdr plugin install trillium/herdr-tailscale`
+# (herdr clones this repo, runs the [[build]] step below, and registers the
+# entry points), or for local development `herdr plugin link .` from a
+# checkout.
+#
+# herdr-tailscale auto-attaches a remote tab (`herdr --remote <peer>`) for
+# every trusted, online peer on your Tailscale tailnet — so every machine's
+# Herdr session can reach every other machine's session with no manual setup.
+# See README.md for the shell-profile line that runs this on every new shell.
+
+id = "trillium.herdr-tailscale"
+name = "Herdr Tailscale"
+version = "0.1.0"
+min_herdr_version = "0.7.0"
+description = "Auto-attaches remote Herdr tabs for trusted, online Tailscale peers, so every machine's Herdr session can reach every other machine's session with no manual setup."
+platforms = ["linux", "macos"]
+
+# Produce the binary at install time. herdr runs this once, after you confirm
+# a GitHub install and before registering the plugin. Result is
+# ./bin/herdr-tailscale, which the action below invokes.
+[[build]]
+command = ["sh", "scripts/build.sh"]
+
+# attach-trusted-peers — the plugin's one action. Runs `tailscale status
+# --json`, filters to trusted peers (online, same tailnet identity as this
+# machine, excluding self and any foreign-tailnet shared-in node — see
+# tailscale.go), and for each trusted peer that doesn't already have an
+# attached tab in the current workspace, opens a new tab and runs
+# `herdr --remote <peer>` in it. Idempotent: re-running it never creates a
+# duplicate tab for a peer that already has one. herdr has no native "on
+# session start" event, so this is meant to be invoked explicitly — see
+# README.md for the `herdr plugin action invoke` line to add to each
+# machine's shell profile so it runs on every new shell/session.
+[[actions]]
+id = "attach-trusted-peers"
+title = "Herdr Tailscale: Attach Trusted Peers"
+command = ["./bin/herdr-tailscale", "attach-trusted-peers"]
